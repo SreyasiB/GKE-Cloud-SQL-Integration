@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project demonstrates a production-style two-tier application where a Python (Flask) backend is deployed on Google Kubernetes Engine (GKE) and securely connects to a managed MySQL database hosted on Cloud SQL.
+This project demonstrates a two-tier application where a Python (Flask) backend is deployed on Google Kubernetes Engine (GKE) and securely connects to a managed MySQL database hosted on Cloud SQL.
 
 It follows modern cloud-native best practices such as:
 
@@ -122,17 +122,13 @@ PROJECT_ID:REGION:INSTANCE_NAME
 
 ## Step 2: Create & connect to GKE Cluster
 
-Create:
-
 ```bash
+# Create
 gcloud container clusters create cluster-1 \
   --region us-central1 \
   --workload-pool=YOUR_PROJECT_ID.svc.id.goog
-```
 
-Connect:
-
-```bash
+#Connect 
 gcloud container clusters get-credentials cluster-1 --region us-central1
 ```
 
@@ -140,25 +136,24 @@ gcloud container clusters get-credentials cluster-1 --region us-central1
 
 ## Step 3: Create namespace
 
-Clone the git repo in cloud shell
 ```bash
-git clone https://github.com/SreyasiB/GKE-Cloud-SQL-Integration.git
-```
-Create namespace
-```bash
+# Clone the git repo in cloud shell
+git clone https://github.com/SreyasiB/gke-cloudsql.git
+
+# Create namespace
 cd k8s-manifests/
 kubectl apply -f namespace.yml
 ```
 
 ##  Step 3: Configure Workload Identity
 
-Create Google Service Account (GSA)
+#### Create Google Service Account (GSA)
 
 ```bash
 gcloud iam service-accounts create cloudsql-gsa
 ```
 
-Grant permissions
+#### Grant permissions
 
 ```bash
 gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
@@ -166,13 +161,13 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
   --role="roles/cloudsql.client"
 ```
 
-Create Kubernetes Service Account
+#### Create Kubernetes Service Account
 
 ```bash
 kubectl create serviceaccount ksa-flask-app --namespace flask-cloudsql
 ```
 
-Bind Kubernetes SA to GSA
+#### Bind Kubernetes SA to GSA
 
 ```bash
 gcloud iam service-accounts add-iam-policy-binding \
@@ -181,7 +176,7 @@ gcloud iam service-accounts add-iam-policy-binding \
   --member "serviceAccount:YOUR_PROJECT_ID.svc.id.goog[flask-cloudsql/ksa-flask-app]"
 ```
 
-Annotate KSA 
+#### Annotate KSA 
 
 ```bash
 kubectl annotate serviceaccount \
@@ -191,9 +186,9 @@ kubectl annotate serviceaccount \
 
 ---
 
-## Step 4: Build & Push Docker Image
+## Step 4: Build & Push Docker Image to Google Artifact Registry
 
-Create a repo in Artifact Registry
+#### Create a repo in Artifact Registry
 
 ```bash
 gcloud artifacts repositories create demo-repo \
@@ -201,13 +196,13 @@ gcloud artifacts repositories create demo-repo \
     --location=us-central1 
 ```
 
-Build the image locally in cloud shell
+#### Build the image locally in cloud shell
 
 ```bash
 cd app/
 docker build -t flask-app .
 ```
-Configure Docker Authentication
+#### Configure Docker Authentication
 
 📌 Replacing region with the repository's region
 
@@ -215,7 +210,7 @@ Configure Docker Authentication
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-Tag and Push the Image to the repo
+#### Tag and Push the Image to the repo
 
 ```bash
 # Tag the image
@@ -229,7 +224,7 @@ docker push us-central1-docker.pkg.dev/[PROJECT-ID]/demo-repo/flask-app:v1
 
 ## Step 5: Kubernetes Deployment
 
-Apply all manifests:
+#### Apply all manifests:
 
 ```bash
 kubectl apply -f k8s-manifests/
@@ -250,13 +245,13 @@ Wait for EXTERNAL-IP to be assigned.
 
 ## Step 7: Access Application
 
-Open in browser:
+#### Open in browser:
 
 ```
 http://EXTERNAL-IP
 ```
 
-Expected output:
+#### Expected output:
 
 ```json
 {
